@@ -12,6 +12,9 @@
 #define HAP_TEST_WIFI_SSID CONFIG_WIFI_SSID
 #define HAP_TEST_WIFI_PASS CONFIG_WIFI_PASSWORD
 
+#define HAP_TEST_PORT 42424
+#define HAP_TEST_NAME "HAP32 Test"
+
 static EventGroupHandle_t wifi_event_group;
 
 /* The event group allows multiple bits for each event,
@@ -80,16 +83,23 @@ static void hks_task( void *pvParameters )
       ESP_LOGI( TAG, "Starting HomeKit server..." );
 
       esp_err_t err = hk_server_init( TCPIP_ADAPTER_IF_STA, &hks );
-      if (err)
+      if ( err )
       {
         ESP_LOGE( TAG, "Failed starting HomeKit server: %u", err );
         continue;
       }
 
-      err = hk_server_listen( hks, 42424 );
-      if (err)
+      err = hk_server_listen( hks, HAP_TEST_PORT );
+      if ( err )
       {
         ESP_LOGE( TAG, "Failed starting HomeKit server: %u", err );
+        continue;
+      }
+
+      err = hk_server_set_name( hks, HAP_TEST_NAME );
+      if ( err )
+      {
+        ESP_LOGE( TAG, "Failed setting HomeKit server name: %u", err );
         continue;
       }
     }
@@ -108,7 +118,7 @@ static void hks_task( void *pvParameters )
       {
         if ( err == ESP_ERR_INVALID_STATE )
           ESP_LOGE( TAG, "Fatal error processing HomeKit clients: %u", err );
-        
+
         ESP_LOGE( TAG, "Failed processing HomeKit clients: %u", err );
         continue;
       }

@@ -135,6 +135,20 @@ esp_err_t hk_server_stop( hk_server_t *hks )
   return ESP_OK;
 }
 
+esp_err_t hk_server_set_name( hk_server_t *hks, const char *name )
+{
+  esp_err_t err = ESP_OK;
+
+  if ( hks == NULL || hks->mdns == NULL )
+    return ESP_ERR_INVALID_STATE;
+
+  err = mdns_set_instance( hks->mdns, name );
+  if ( err )
+    return err;
+
+  return ESP_OK;
+}
+
 esp_err_t hk_server_accept( hk_server_t *hks )
 {
   esp_err_t err = ESP_OK;

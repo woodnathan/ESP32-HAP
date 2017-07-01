@@ -11,6 +11,8 @@ extern void hk_server_free( hk_server_t *hks );
 extern esp_err_t hk_server_listen( hk_server_t *hks, uint16_t port );
 extern esp_err_t hk_server_stop( hk_server_t *hks );
 
+extern esp_err_t hk_server_set_name( hk_server_t *hks, const char *name );
+
 // client accept loop
 extern esp_err_t hk_server_accept( hk_server_t *hks );
 extern esp_err_t hk_server_process_clients( hk_server_t *hks );
