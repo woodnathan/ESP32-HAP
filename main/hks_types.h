@@ -1,0 +1,23 @@
+#include <stdio.h>
+
+typedef enum {
+  HKS_CATEGORY_ID_OTHER               = 1,
+  HKS_CATEGORY_ID_BRIDGE              = 2,
+  HKS_CATEGORY_ID_FAN                 = 3,
+  HKS_CATEGORY_ID_GARAGE              = 4,
+  HKS_CATEGORY_ID_LIGHTBULB           = 5,
+  HKS_CATEGORY_ID_DOOR_LOCK           = 6,
+  HKS_CATEGORY_ID_OUTLET              = 7,
+  HKS_CATEGORY_ID_SWITCH              = 8,
+  HKS_CATEGORY_ID_THERMOSTAT          = 9,
+  HKS_CATEGORY_ID_SENSOR              = 10,
+  HKS_CATEGORY_ID_SECURITY_SYSTEM     = 11,
+  HKS_CATEGORY_ID_DOOR                = 12,
+  HKS_CATEGORY_ID_WINDOW              = 13,
+  HKS_CATEGORY_ID_WINDOW_COVERING     = 14,
+  HKS_CATEGORY_ID_PROGRAMMABLE_SWITCH = 15,
+  HKS_CATEGORY_ID_RANGE_EXTENDER      = 16,
+  HKS_CATEGORY_ID_IP_CAMERA           = 17,
+  HKS_CATEGORY_ID_VIDEO_DOOR_BELL     = 18,
+  HKS_CATEGORY_ID_AIR_PURIFIER        = 19
+} hks_category_id_t;

@@ -4,15 +4,18 @@
 #include <lwip/sockets.h>
 #include <lwip/netdb.h>
 #include <esp_log.h>
+#include <esp_wifi.h>
 #include "hks_utils.h"
 #include "hks_client.h"
 #include "hks_http.h"
+#include "hks_txt.h"
 
 static const char *TAG = "hk-server";
 
 struct hk_server_s
 {
   tcpip_adapter_if_t tcpip_if;
+  hks_txt_t txt;
   mdns_server_t *mdns;
   int fd;
   xSemaphoreHandle lock;
@@ -23,6 +26,8 @@ struct hk_server_s
 static const char *_HK_HAP_SERVICE = "_hap";
 static const char *_HK_HAP_PROTO   = "_tcp";
 
+static esp_err_t _hk_server_init_txt( hks_txt_t *txt );
+static esp_err_t _hk_server_update_txt( hk_server_t *hks );
 static esp_err_t _hk_server_bind( hk_server_t *hks, uint16_t port );
 static esp_err_t _hk_server_accept( hk_server_t *hks );
 static esp_err_t _hk_server_close_client(
@@ -49,9 +54,25 @@ esp_err_t hk_server_init( tcpip_adapter_if_t tcpip_if, hk_server_t **hks )
   server->fd = -1;
   server->clients = NULL;
 
+  err = hks_txt_init( &server->txt );
+  if ( err )
+  {
+    free( server );
+    return err;
+  }
+
+  err = _hk_server_init_txt( &server->txt );
+  if ( err )
+  {
+    hks_txt_free( &server->txt );
+    free( server );
+    return err;
+  }
+
   err = mdns_init( TCPIP_ADAPTER_IF_STA, &server->mdns );
   if ( err )
   {
+    hks_txt_free( &server->txt );
     free( server );
     return err;
   }
@@ -59,11 +80,29 @@ esp_err_t hk_server_init( tcpip_adapter_if_t tcpip_if, hk_server_t **hks )
   server->lock = xSemaphoreCreateMutex();
   if ( !server->lock )
   {
+    mdns_free( server->mdns );
+    hks_txt_free( &server->txt );
     free( server );
     return ESP_ERR_NO_MEM;
   }
 
   *hks = server;
+
+  return ESP_OK;
+}
+
+esp_err_t _hk_server_init_txt( hks_txt_t *txt )
+{
+  uint8_t sta_mac[6];
+  esp_err_t err = ESP_OK;
+
+  err = esp_wifi_get_mac( ESP_IF_WIFI_STA, sta_mac );
+  if ( err )
+    return err;
+
+  err = hks_txt_set_device_id( txt, sta_mac );
+  if ( err )
+    return err;
 
   return ESP_OK;
 }
@@ -75,6 +114,7 @@ void hk_server_free( hk_server_t *hks )
 
   hk_server_stop( hks );
 
+  hks_txt_free( &hks->txt );
   mdns_free( hks->mdns );
   vSemaphoreDelete( hks->lock );
 
@@ -101,21 +141,24 @@ esp_err_t hk_server_listen( hk_server_t *hks, uint16_t port )
   if ( err )
     return err;
 
-  const char *hapTxtData[8] = {
-    "c#=1",
-    "ff=1",
-    "id=c4:b3:01:c3:f7:9d",
-    "md=ESP32,1",
-    "pv=1.0",
-    "s#=1",
-    "sf=1",
-    "ci=7"
-  };
-  err = mdns_service_txt_set( hks->mdns, _HK_HAP_SERVICE, _HK_HAP_PROTO, 8, hapTxtData );
+  err = _hk_server_update_txt( hks );
   if ( err )
     return err;
 
   return ESP_OK;
+}
+
+esp_err_t _hk_server_update_txt( hk_server_t *hks )
+{
+  hks_txt_t *txt = &hks->txt;
+  char **records = &txt->records[0];
+  return mdns_service_txt_set(
+    hks->mdns,
+    _HK_HAP_SERVICE,
+    _HK_HAP_PROTO,
+    HKS_TXT_RECORD_COUNT,
+    (const char **)records
+  );
 }
 
 esp_err_t hk_server_stop( hk_server_t *hks )
